@@ -1,5 +1,6 @@
 package com.example.navigation_d.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -10,31 +11,45 @@ import androidx.navigation.compose.rememberNavController
 import com.example.navigation_d.navigation.contract.AppCoordinatorAction
 import com.example.navigation_d.navigation.contract.CoordinatorAction
 import com.example.navigation_d.navigation.contract.GeneralAction
+import com.example.navigation_d.navigation.contract.NavigationAction
 import com.example.navigation_d.navigation.contract.RootCoordinator
 import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
-import javax.inject.Provider
 
 @Singleton
 class RootCoordinatorImpl @Inject constructor(
     override val navigator: Navigator,
-    @Named("AutheCoordinator") private val authCoordinator: Lazy<Coordinator>,
-    @Named("MaineCoordinator") private val mainCoordinator: Lazy<Coordinator>
+    @Named("AuthCoordinator") private val authCoordinator: Lazy<Coordinator>,
+    @Named("MainCoordinator") private val mainCoordinator: Lazy<Coordinator>
 ) : RootCoordinator {
-    
-    override val parent: Lazy<Coordinator>?? = null
+
+    override val parent: Lazy<Coordinator>? = null
     
     private var _activeCoordinator by mutableStateOf<Coordinator?>(null)
     override val activeCoordinator: Coordinator? get() = _activeCoordinator
 
+    override fun handle(action: CoordinatorAction): Boolean {
+        // Check for navigation actions first
+        if (action is NavigationAction) {
+            return when (action) {
+                is NavigationAction.Back -> navigateBack()
+                is NavigationAction.Up -> navigateUp()
+                is NavigationAction.Home -> {
+                    // Navigate to home screen
+                    navigator.resetTo(NavigationRoutes.MAIN_GRAPH)
+                    _activeCoordinator = mainCoordinator.get()
+                    true
+                }
+            }
+        }
 
-    override fun handle(action: CoordinatorAction) {
-         when (action) {
+        // Then check other action types
+        return when (action) {
             is AppCoordinatorAction -> handleAppAction(action)
             is GeneralAction -> handleGeneralAction(action)
-            else -> _activeCoordinator?.handle(action)
+            else -> _activeCoordinator?.handle(action) ?: false
         }
     }
     
@@ -49,16 +64,21 @@ class RootCoordinatorImpl @Inject constructor(
     @Composable
     override fun renderNavHost() {
         val navController = rememberNavController()
-        
-        // Observe navigator state and trigger navigation
-        LaunchedEffect(navigator.route) {
-            if (navigator.route.isNotEmpty()) {
-                navController.navigate(navigator.route) {
-                    launchSingleTop = true
-                }
+
+        // Set the NavController for system back integration
+        LaunchedEffect(navController) {
+            navigator.setNavController(navController)
+        }
+
+        // Handle system back button
+        BackHandler(enabled = true) {
+            // Handle system back through our coordinator system first,
+            // then fall back to Navigator's system back handling
+            if (!navigateBack()) {
+                navigator.handleSystemBack()
             }
         }
-        
+
         NavHost(
             navController = navController,
             startDestination = NavigationRoutes.AUTH_GRAPH
@@ -85,18 +105,17 @@ class RootCoordinatorImpl @Inject constructor(
                 navigator.navigateTo(action.route)
                 true
             }
-            else -> false
         }
     }
-    
-    private fun handleGeneralAction(action: GeneralAction) {
-        when (action) {
+
+    private fun handleGeneralAction(action: GeneralAction): Boolean {
+        return when (action) {
             is GeneralAction.Done -> {
-                // Handle done action
+                // Handle done action - delegate to active coordinator or handle locally
                 _activeCoordinator?.handle(action) ?: false
             }
             is GeneralAction.Cancel -> {
-                // Handle cancel action
+                // Handle cancel action - delegate to active coordinator or handle locally
                 _activeCoordinator?.handle(action) ?: false
             }
         }
@@ -109,8 +128,33 @@ class RootCoordinatorImpl @Inject constructor(
     override fun navigate(route: String, params: Any?) {
         navigator.navigateTo(route, params)
     }
-    
-    fun setActiveCoordinator(coordinator: Coordinator?) {
+
+    override fun navigateBack(): Boolean {
+        // First try to let the active coordinator handle it
+        if (_activeCoordinator?.navigateBack() == true) {
+            return true
+        }
+
+        // If no active coordinator or it didn't handle back, we're at root level
+        // Return false to indicate system should handle it (e.g., exit app)
+        return false
+    }
+
+    override fun navigateUp(): Boolean {
+        // In RootCoordinator, up navigation is the same as back navigation
+        return navigateBack()
+    }
+
+    override fun canNavigateBack(): Boolean {
+        // Check if active coordinator can navigate back
+        return _activeCoordinator?.canNavigateBack() == true
+    }
+
+    override fun activateCoordinator(coordinator: Coordinator) {
         _activeCoordinator = coordinator
+    }
+
+    override fun deactivateCoordinator() {
+        _activeCoordinator = null
     }
 }

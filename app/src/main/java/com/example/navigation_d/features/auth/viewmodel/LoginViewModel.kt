@@ -2,9 +2,9 @@ package com.example.navigation_d.features.auth.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.navigation_d.features.auth.coordinator.AuthCoordinator
-import com.example.navigation_d.features.auth.coordinator.AuthCoordinatorImpl
+import com.example.navigation_d.navigation.Coordinator
 import com.example.navigation_d.navigation.contract.AuthCoordinatorAction
+import com.example.navigation_d.navigation.contract.NavigationAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +15,7 @@ import javax.inject.Named
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    @Named("AuthCoordinator") private val authCoordinator: AuthCoordinator
+    @Named("AuthCoordinator") private val authCoordinator: Coordinator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -29,19 +29,19 @@ class LoginViewModel @Inject constructor(
             kotlinx.coroutines.delay(1000)
             
             // Navigate to main screen after successful login using action-based navigation
-            authCoordinator.handleAuthAction(AuthCoordinatorAction.LoginSuccess("user123"))
+            authCoordinator.handle(AuthCoordinatorAction.LoginSuccess("user123"))
             
             _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }
 
     fun onSettingsClick() {
-        authCoordinator.handleAuthAction(AuthCoordinatorAction.ShowSettings)
+        authCoordinator.handle(AuthCoordinatorAction.ShowSettings)
     }
 
     fun onBackClick() {
-        // In the reference pattern, we use actions instead of direct navigation
-        authCoordinator.handleAuthAction(AuthCoordinatorAction.Logout)
+        // Use NavigationAction.Back for consistent back handling
+        authCoordinator.handle(NavigationAction.Back)
     }
 }
 

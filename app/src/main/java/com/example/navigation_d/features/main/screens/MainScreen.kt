@@ -1,5 +1,6 @@
 package com.example.navigation_d.features.main.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
@@ -19,6 +20,12 @@ fun MainScreen(
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Handle system back button press
+    BackHandler {
+        viewModel.onBackClick()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

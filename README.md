@@ -4,26 +4,38 @@ A modern Android application showcasing a clean navigation architecture using th
 
 ## 🏗 Architecture
 
-The app follows a **Coordinator Pattern** with MVVM architecture, focusing on clean separation of concerns and maintainable navigation.
+The app follows a **Simplified Coordinator Pattern** with MVVM architecture, focusing on clean
+separation of concerns and maintainable navigation.
 
 ### Core Components
 - **UI Layer**: Jetpack Compose for modern UI
-- **Navigation**: Coordinator Pattern with type-safe routing
+- **Navigation**: Streamlined Coordinator Pattern with type-safe routing
 - **Dependency Injection**: Hilt for dependency management
 - **State Management**: ViewModel with StateFlow
 
 ### Navigation Flow
 ```
-UI Components → ViewModel → Coordinator → Navigation
+UI Components → ViewModel → Coordinator (handle) → Navigation
 ```
 
 ## 🚀 Features
 
-### Coordinator Pattern Implementation
+### Streamlined Coordinator Pattern Implementation
 - **RootCoordinator**: Manages top-level navigation
-- **Feature Coordinators**: Dedicated coordinators for Auth, Main, and Orders
+- **Direct Coordinator Implementations**: Cleaner implementations for Auth, Main, and Orders
+  features
 - **Clean Navigation**: Navigation logic separated from UI
 - **Type Safety**: Sealed classes for navigation actions
+- **Nested Coordinators**: Support for hierarchical navigation flows
+
+### Technical Features
+
+- **Clean Architecture**: MVVM + Simplified Coordinator pattern with action-based navigation
+- **Dependency Injection**: Hilt with parent-child coordinator hierarchy
+- **Preview Support**: All composables are previewable in Android Studio
+- **Material 3 Theming**: Modern UI with Material 3 design system
+- **State Management**: Reactive state management with ViewModels and StateFlow
+- **Type Safety**: Strongly typed navigation with sealed class actions
 
 ### Back Navigation
 - Screen-level back handling with `BackHandler`
@@ -31,28 +43,6 @@ UI Components → ViewModel → Coordinator → Navigation
 - No global back action handling for simpler flow
 
 ## 🛠 Usage
-
-### Creating a New Feature
-1. Create a new package under `features/`
-2. Define your coordinator interface:
-   ```kotlin
-   interface FeatureCoordinator : Coordinator {
-       fun handleFeatureAction(action: FeatureAction)
-   }
-   ```
-3. Implement the coordinator:
-   ```kotlin
-   class FeatureCoordinatorImpl @Inject constructor(
-       private val navigator: Navigator,
-       @Named("ParentCoordinator") override val parent: Lazy<Coordinator>?
-   ) : FeatureCoordinator {
-       override fun handleFeatureAction(action: FeatureAction) {
-           when (action) {
-               is FeatureAction.NavigateToScreen -> navigator.navigateTo(action.route)
-           }
-       }
-   }
-   ```
 
 ### Handling Back Navigation
 ```kotlin
@@ -73,11 +63,21 @@ com.example.navigation_d/
 ├── di/                          # Dependency injection
 ├── features/                    # Feature modules
 │   ├── auth/                   # Authentication
+│   │   ├── coordinator/        # Auth coordinator
+│   │   ├── screens/            # Auth UI screens
+│   │   └── viewmodel/          # Auth ViewModels
 │   ├── main/                   # Main app flow
+│   │   ├── coordinator/        # Main coordinator (host)
+│   │   ├── screens/            # Main UI screens
+│   │   └── viewmodel/          # Main ViewModels
 │   └── orders/                 # Orders feature
+│       ├── coordinator/        # Orders coordinator (nested)
+│       ├── screens/            # Orders UI screens
+│       └── viewmodel/          # Orders ViewModels
 ├── navigation/                  # Core navigation
-│   ├── contract/               # Navigation interfaces
-│   ├── AppNavigatorImpl.kt     # Navigation implementation
+│   ├── contract/               # Navigation action interfaces
+│   ├── Coordinator.kt          # Base coordinator interfaces
+│   ├── Navigator.kt            # Navigation implementation
 │   └── NavigationRoutes.kt     # Route definitions
 └── MainActivity.kt             # App entry point
 ```
@@ -86,6 +86,7 @@ com.example.navigation_d/
 
 1. **Coordinators**
    - One coordinator per feature
+   - Direct implementation of base interfaces
    - Handle navigation only
    - Keep business logic in ViewModels
 
@@ -95,7 +96,7 @@ com.example.navigation_d/
 
 3. **Dependency Injection**
    - Constructor injection
-   - Use `@Named` for multiple instances
+   - Use `@Named` for coordinator instances
 
 4. **Testing**
    - Test navigation actions
@@ -107,40 +108,13 @@ com.example.navigation_d/
 2. Open in Android Studio
 3. Run on an emulator or device
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Create a Pull Request
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE)
-```
-
-### Screen Features
-- **Authentication Flow**: Login screen with navigation to main app
-- **Main Dashboard**: Central hub with access to orders and profile
-- **Orders Management**: List and detail views for order management
-- **Profile Management**: User profile with settings and preferences
-- **Settings**: Theme toggle, notifications, and app preferences
-
-### Technical Features
-- **Clean Architecture**: MVVM + Coordinator pattern with action-based navigation
-- **Dependency Injection**: Hilt with parent-child coordinator hierarchy
-- **Preview Support**: All composables are previewable in Android Studio
-- **Material 3 Theming**: Modern UI with Material 3 design system
-- **State Management**: Reactive state management with ViewModels and StateFlow
-- **Type Safety**: Strongly typed navigation with sealed class actions
-
 ## 🔄 Action-Based Navigation Flow
 
 The app implements a clean action-based navigation architecture:
 
 ### Navigation Architecture
 ```
-ViewModels → Actions → Coordinators → AppNavigator → NavController
+ViewModels → Actions → Coordinators → Navigator → NavController
 ```
 
 ### Usage Examples
@@ -150,29 +124,29 @@ ViewModels → Actions → Coordinators → AppNavigator → NavController
 // LoginViewModel
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authCoordinator: AuthCoordinator
+    @Named("AuthCoordinator") private val authCoordinator: Coordinator
 ) : ViewModel() {
     
     fun onLoginClick() {
         // Send action to coordinator
-        authCoordinator.handleAuthAction(
+        authCoordinator.handle(
             AuthCoordinatorAction.LoginSuccess("user123")
         )
     }
     
     fun onSettingsClick() {
-        authCoordinator.handleAuthAction(AuthCoordinatorAction.ShowSettings)
+        authCoordinator.handle(AuthCoordinatorAction.ShowSettings)
     }
 }
 
 // OrdersViewModel
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
-    private val ordersCoordinator: OrdersCoordinator
+    @Named("OrdersCoordinator") private val ordersCoordinator: Coordinator
 ) : ViewModel() {
     
     fun onOrderClick(orderId: String) {
-        ordersCoordinator.handleOrdersAction(
+        ordersCoordinator.handle(
             OrdersCoordinatorAction.ShowOrderDetails(orderId)
         )
     }
@@ -182,21 +156,30 @@ class OrdersViewModel @Inject constructor(
 **Coordinator Implementation:**
 ```kotlin
 @Singleton
-class AuthCoordinatorImpl @Inject constructor(
-    private val appNavigator: AppNavigator,
-    @Named("RootCoordinator") override val parent: BaseNavigator?
-) : AuthCoordinator {
+class AuthCoordinator @Inject constructor(
+    @Named("RootCoordinator") override val parent: Lazy<Coordinator>?
+) : Coordinator {
 
-    override fun handleAuthAction(action: AuthCoordinatorAction) {
-        when (action) {
-            is AuthCoordinatorAction.ShowLogin -> 
-                appNavigator.navigateToLogin()
-            is AuthCoordinatorAction.LoginSuccess -> 
-                appNavigator.navigateToMainApp()
-            is AuthCoordinatorAction.ShowSettings -> 
-                appNavigator.navigateToSettings()
-            is AuthCoordinatorAction.Logout -> 
-                parent?.handleAction(action) // Delegate to parent
+    override fun handle(action: CoordinatorAction): Boolean {
+        return when (action) {
+            is AuthCoordinatorAction -> {
+                when (action) {
+                    is AuthCoordinatorAction.ShowLogin -> {
+                        navigate("login_screen")
+                    }
+                    is AuthCoordinatorAction.LoginSuccess -> {
+                        navigate("main_graph")
+                    }
+                    is AuthCoordinatorAction.ShowSettings -> {
+                        navigate("settings_screen")
+                    }
+                    is AuthCoordinatorAction.Logout -> {
+                        navigate("login_screen")
+                    }
+                }
+                true
+            }
+            else -> parent?.get()?.handle(action) ?: false
         }
     }
 }
@@ -207,21 +190,16 @@ class AuthCoordinatorImpl @Inject constructor(
 ```
 🚀 App Start (RootCoordinator)
     ↓
-🔐 Authentication Graph (AuthCoordinator)
+🔐 Authentication (AuthCoordinator)
     ├── LoginScreen → AuthCoordinatorAction.LoginSuccess
     └── SettingsScreen → AuthCoordinatorAction.ShowSettings
     ↓
-🏠 Main Graph (MainCoordinator)  
+🏠 Main (MainCoordinator) ← HOST  
     └── MainScreen → MainCoordinatorAction.ShowOrders/ShowProfile
     ↓
-📦 Orders Graph (OrdersCoordinator)
+📦 Orders (OrdersCoordinator) ← NESTED
     ├── OrdersListScreen → OrdersCoordinatorAction.ShowOrdersList
     └── OrderDetailsScreen → OrdersCoordinatorAction.ShowOrderDetails
-    ↓
-👤 Profile Graph (ProfileNavigator)
-    ├── ProfileScreen → ProfileCoordinatorAction.ShowProfile
-    ├── EditProfileScreen → ProfileCoordinatorAction.ShowEditProfile
-    └── SavedItemsScreen → ProfileCoordinatorAction.ShowSavedItems
 ```
 
 ### Action-Based Coordinators
@@ -232,7 +210,6 @@ Each coordinator handles specific navigation actions:
 - **AuthCoordinator**: Handles authentication flow with `AuthCoordinatorAction`
 - **MainCoordinator**: Manages main app navigation with `MainCoordinatorAction`
 - **OrdersCoordinator**: Controls order screens with `OrdersCoordinatorAction`
-- **ProfileNavigator**: Manages profile features with `ProfileCoordinatorAction`
 
 ## 🧪 Testing
 
@@ -245,8 +222,7 @@ The app includes comprehensive preview support:
 
 ### Navigation Testing
 - All navigation flows are testable through the coordinator interfaces
-- Mock navigators are provided for preview and testing purposes
-- Deep link handling can be tested through the AppNavigator interface
+- Mock coordinators can be provided for isolated testing
 
 ## 📦 Dependencies
 
@@ -267,29 +243,30 @@ The app includes comprehensive preview support:
 
 ## 🔧 Recent Updates
 
+### Version 4.0 - Simplified Coordinator Pattern
+
+- ✅ **Streamlined Coordinator Pattern** - Removed unnecessary interface layers for cleaner
+  architecture
+- ✅ **Direct Base Interface Implementation** - Coordinators now directly implement `Coordinator` or
+  `HostCoordinator`
+- ✅ **Unified Action Handling** - All actions handled through the standard `handle()` method
+- ✅ **Simplified DI Structure** - Cleaner dependency injection with fewer bindings
+- ✅ **Improved Type Safety** - Maintained strong typing with less boilerplate
+
 ### Version 3.0 - Pure Action-Based Navigation Architecture
-- ✅ **Pure Action-Based Navigation** - Migrated from hybrid to 100% action-based navigation using sealed classes
-- ✅ **Parent-Child Coordinator Hierarchy** - Implemented proper coordinator hierarchy with delegation
-- ✅ **Cleaned Architecture** - Removed all unused direct navigation methods for cleaner codebase
+- ✅ **Pure Action-Based Navigation** - Migrated to 100% action-based navigation using sealed classes
+- ✅ **Parent-Child Coordinator Hierarchy** - Implemented proper coordinator hierarchy with
+  delegation
 - ✅ **Enhanced Type Safety** - All navigation uses strongly-typed sealed class actions
-- ✅ **Improved DI Structure** - Hilt `@Provides` methods for coordinator parent injection
-- ✅ **ViewModel Updates** - All ViewModels now use pure action-based navigation commands
-- ✅ **Build Optimization** - Resolved all compilation errors and achieved successful build
 
-### Version 2.0 - Coordinator Pattern Implementation
-- ✅ **Migrated to Coordinator Pattern** - Implemented modular navigation architecture
-- ✅ **Multi-Graph Navigation** - Separated Auth, Main, Orders, and Profile into distinct navigation graphs
-- ✅ **Interface Abstractions** - Created clean navigation contracts for better testability
-- ✅ **Dependency Injection Improvements** - Fixed DI binding issues and improved module structure
-
-### Action-Based Architecture Benefits
-- **🎯 Type Safety**: Sealed class actions provide compile-time safety and IDE support
-- **🧹 Clean Code**: Single responsibility - coordinators only handle actions
-- **🔄 Extensibility**: Easy to add new actions without changing coordinator interfaces
-- **🧪 Testability**: Actions are easily mockable and testable
-- **📦 Modularity**: Each feature has its own action types and coordinator
-- **🏗️ Maintainability**: Clear separation of navigation concerns with action delegation
-- **🚀 Scalability**: Parent-child hierarchy supports complex navigation flows
+### Simplified Architecture Benefits
+- 🎯 **Type Safety**: Sealed class actions provide compile-time safety and IDE support
+- 🧹 **Clean Code**: Fewer files and more direct implementations
+- 🔄 **Extensibility**: Easy to add new actions without changing coordinator interfaces
+- 🧪 **Testability**: Actions are easily mockable and testable
+- 📦 **Modularity**: Each feature has its own coordinator and action types
+- 🏗️ **Maintainability**: Simpler codebase with fewer layers
+- 🚀 **Scalability**: Parent-child hierarchy supports complex navigation flows
 
 ## 🤝 Contributing
 
@@ -300,9 +277,9 @@ The app includes comprehensive preview support:
 
 ### Development Guidelines
 - **Action-Based Navigation**: Use sealed class actions for all navigation commands
-- **Coordinator Hierarchy**: Implement parent-child relationships with proper delegation
-- **Interface Abstractions**: Use proper navigation interfaces for testability
-- **ViewModel Integration**: Inject coordinators into ViewModels and use action-based commands
+- **Direct Implementation**: Implement base interfaces directly for cleaner code
+- **Coordinator Hierarchy**: Use parent-child relationships for nested flows
+- **ViewModel Integration**: Inject coordinators into ViewModels and use base interface types
 - **Preview Support**: Add preview support for all new composables
 - **Material 3 Theming**: Maintain consistent Material 3 theming across screens
 
@@ -316,39 +293,45 @@ sealed class NewFeatureAction : CoordinatorAction {
 }
 ```
 
-2. **Create Coordinator Interface**:
-```kotlin
-interface NewFeatureCoordinator : BaseNavigator {
-    fun handleNewFeatureAction(action: NewFeatureAction)
-}
-```
-
-3. **Implement Coordinator**:
+2. **Implement Coordinator**:
 ```kotlin
 @Singleton
-class NewFeatureCoordinatorImpl @Inject constructor(
-    private val appNavigator: AppNavigator,
-    @Named("RootCoordinator") override val parent: BaseNavigator?
-) : NewFeatureCoordinator {
+class NewFeatureCoordinator @Inject constructor(
+    @Named("ParentCoordinator") override val parent: Lazy<Coordinator>?
+) : Coordinator {
     
-    override fun handleNewFeatureAction(action: NewFeatureAction) {
-        when (action) {
-            is NewFeatureAction.ShowFeature -> appNavigator.navigateToFeature()
-            is NewFeatureAction.ShowDetails -> appNavigator.navigateToDetails(action.id)
+    override fun handle(action: CoordinatorAction): Boolean {
+        return when (action) {
+            is NewFeatureAction -> {
+                when (action) {
+                    is NewFeatureAction.ShowFeature -> navigate("feature_screen")
+                    is NewFeatureAction.ShowDetails -> navigate("details_screen", action.id)
+                }
+                true
+            }
+            else -> parent?.get()?.handle(action) ?: false
         }
     }
 }
 ```
 
-4. **Update ViewModel**:
+3. **Register in DI Module**:
+```kotlin
+@Binds
+@Singleton
+@Named("NewFeatureCoordinator")
+abstract fun bindNewFeatureCoordinator(impl: NewFeatureCoordinator): Coordinator
+```
+
+4. **Use in ViewModel**:
 ```kotlin
 @HiltViewModel
 class NewFeatureViewModel @Inject constructor(
-    private val coordinator: NewFeatureCoordinator
+   @Named("NewFeatureCoordinator") private val coordinator: Coordinator
 ) : ViewModel() {
     
     fun onFeatureClick() {
-        coordinator.handleNewFeatureAction(NewFeatureAction.ShowFeature)
+       coordinator.handle(NewFeatureAction.ShowFeature)
     }
 }
 ```

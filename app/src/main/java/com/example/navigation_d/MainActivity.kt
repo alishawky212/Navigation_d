@@ -11,7 +11,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.example.navigation_d.navigation.Navigator
-import com.example.navigation_d.navigation.contract.GeneralAction
 import com.example.navigation_d.navigation.contract.RootCoordinator
 import com.example.navigation_d.ui.theme.Navigation_dTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,7 +23,7 @@ class MainActivity : ComponentActivity() {
     lateinit var navigator: Navigator
     
     @Inject
-    @Named("RooteCoordinator")
+    @Named("RootCoordinator")
     lateinit var rootCoordinator: RootCoordinator
     
     override fun onCreate(savedInstanceState: Bundle?) {

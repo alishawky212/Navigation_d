@@ -7,6 +7,29 @@ package com.example.navigation_d.navigation.contract
 sealed interface CoordinatorAction
 
 /**
+ * General navigation actions that can be handled by any coordinator
+ */
+sealed class NavigationAction : CoordinatorAction {
+    /**
+     * Navigate back to the previous screen
+     * This will be handled hierarchically - first by the active coordinator,
+     * then by its parent if not handled
+     */
+    object Back : NavigationAction()
+
+    /**
+     * Navigate up to the parent flow
+     * Forces navigation back to the parent coordinator
+     */
+    object Up : NavigationAction()
+
+    /**
+     * Navigate to the root/home screen
+     */
+    object Home : NavigationAction()
+}
+
+/**
  * General actions that can be handled by any coordinator
  */
 sealed class GeneralAction : CoordinatorAction {

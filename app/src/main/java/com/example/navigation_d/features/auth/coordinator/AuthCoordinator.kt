@@ -1,40 +1,31 @@
 package com.example.navigation_d.features.auth.coordinator
 
-import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraphBuilder
 import com.example.navigation_d.features.auth.navigation.authGraph
 import com.example.navigation_d.navigation.Coordinator
 import com.example.navigation_d.navigation.contract.AuthCoordinatorAction
 import com.example.navigation_d.navigation.contract.CoordinatorAction
-import com.example.navigation_d.navigation.contract.GeneralAction
 import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.inject.Named
 
-
 /**
- * Auth Coordinator interface for ViewModels - provides type-safe navigation methods
- * Extends base Coordinator for hierarchy consistency
- */
-interface AuthCoordinator : Coordinator {
-    fun handleAuthAction(action: AuthCoordinatorAction)
-}
-
-/**
- * Implementation of AuthCoordinator with pure action-based navigation
+ * Implementation of Auth coordinator with pure action-based navigation
+ * Uses the base Coordinator interface directly
  */
 @Singleton
-class AuthCoordinatorImpl @Inject constructor(
+class AuthCoordinator @Inject constructor(
     @Named("RootCoordinator") override val parent: Lazy<Coordinator>?
-) : AuthCoordinator {
+) : Coordinator {
 
-    override fun handle(action: CoordinatorAction) {
-         when (action) {
+    override fun handle(action: CoordinatorAction): Boolean {
+        return when (action) {
             is AuthCoordinatorAction -> {
                 handleAuthAction(action)
+                true
             }
-            else -> parent?.get()?.handle(action)
+            else -> parent?.get()?.handle(action) ?: false
         }
     }
 
@@ -44,7 +35,10 @@ class AuthCoordinatorImpl @Inject constructor(
 
     private var currentScreen: String = ""
 
-    override fun handleAuthAction(action: AuthCoordinatorAction) {
+    /**
+     * Handle Auth-specific actions
+     */
+    private fun handleAuthAction(action: AuthCoordinatorAction) {
         when (action) {
             is AuthCoordinatorAction.ShowLogin -> {
                 currentScreen = "login_screen"

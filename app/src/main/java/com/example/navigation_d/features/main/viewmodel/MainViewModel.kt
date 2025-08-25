@@ -1,8 +1,9 @@
 package com.example.navigation_d.features.main.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.navigation_d.features.main.coordinator.MainCoordinator
+import com.example.navigation_d.navigation.HostCoordinator
 import com.example.navigation_d.navigation.contract.MainCoordinatorAction
+import com.example.navigation_d.navigation.contract.NavigationAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,27 +13,27 @@ import javax.inject.Named
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    @Named("MainCoordinator") private val mainCoordinator: MainCoordinator
+    @Named("MainCoordinator") private val mainCoordinator: HostCoordinator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     fun onOrdersClick() {
-        mainCoordinator.handleMainAction(MainCoordinatorAction.ShowOrders)
+        mainCoordinator.handle(MainCoordinatorAction.ShowOrders)
     }
 
     fun onProfileClick() {
-        mainCoordinator.handleMainAction(MainCoordinatorAction.ShowProfile)
+        mainCoordinator.handle(MainCoordinatorAction.ShowProfile)
     }
 
     fun onLogoutClick() {
-        mainCoordinator.handleMainAction(MainCoordinatorAction.Logout)
+        mainCoordinator.handle(MainCoordinatorAction.Logout)
     }
 
     fun onBackClick() {
-        // In the reference pattern, we use actions instead of direct navigation
-        mainCoordinator.handleMainAction(MainCoordinatorAction.Logout)
+        // Use NavigationAction.Back for consistent back handling
+        mainCoordinator.handle(NavigationAction.Back)
     }
 }
 

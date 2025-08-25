@@ -1,7 +1,7 @@
 package com.example.navigation_d.features.orders.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.navigation_d.features.orders.coordinator.OrdersCoordinator
+import com.example.navigation_d.navigation.Coordinator
 import com.example.navigation_d.navigation.contract.OrdersCoordinatorAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,19 +12,19 @@ import javax.inject.Named
 
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
-   @Named("OrdersCoordinator") private val ordersCoordinator: OrdersCoordinator
+    @Named("OrdersCoordinator") private val ordersCoordinator: Coordinator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrdersUiState())
     val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
 
     fun onOrderClick(orderId: String) {
-        ordersCoordinator.handleOrdersAction(OrdersCoordinatorAction.ShowOrderDetails(orderId))
+        ordersCoordinator.handle(OrdersCoordinatorAction.ShowOrderDetails(orderId))
     }
 
     fun onBackClick() {
         // In the reference pattern, we use actions instead of direct navigation
-        ordersCoordinator.handleOrdersAction(OrdersCoordinatorAction.BackToMain)
+        ordersCoordinator.handle(OrdersCoordinatorAction.BackToMain)
     }
 
     fun loadOrders() {

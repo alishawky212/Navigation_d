@@ -1,5 +1,6 @@
 package com.example.navigation_d.features.auth.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -21,6 +22,11 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // Handle system back button press
+    BackHandler {
+        viewModel.onBackClick()
+    }
 
     Scaffold(
         topBar = {
