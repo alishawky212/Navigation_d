@@ -2,24 +2,24 @@ package com.example.navigation_d.features.main.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.example.navigation_d.features.main.coordinator.MainCoordinator
-import com.example.navigation_d.navigation.Coordinator
 import com.example.navigation_d.navigation.contract.MainCoordinatorAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val mainCoordinator: Coordinator
+    @Named("MainCoordinator") private val mainCoordinator: MainCoordinator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     fun onOrdersClick() {
-        mainCoordinator.handle(MainCoordinatorAction.ShowOrders)
+        mainCoordinator.handleMainAction(MainCoordinatorAction.ShowOrders)
     }
 
     fun onProfileClick() {

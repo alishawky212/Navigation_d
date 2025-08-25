@@ -1,43 +1,48 @@
 package com.example.navigation_d.features.orders.coordinator
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavGraphBuilder
 import com.example.navigation_d.features.main.coordinator.MainCoordinatorImpl
-import com.example.navigation_d.navigation.NavHostBuilder
+import com.example.navigation_d.features.orders.navigation.ordersGraph
 import com.example.navigation_d.navigation.Coordinator
 import com.example.navigation_d.navigation.contract.OrdersCoordinatorAction
 import com.example.navigation_d.navigation.contract.CoordinatorAction
+import dagger.Lazy
 import javax.inject.Inject
-import javax.inject.Singleton
 import javax.inject.Named
+import javax.inject.Singleton
 
+
+/**
+ * Orders Coordinator interface for ViewModels - provides type-safe navigation methods
+ * Extends base Coordinator for hierarchy consistency
+ */
+interface OrdersCoordinator : Coordinator {
+    fun handleOrdersAction(action: OrdersCoordinatorAction)
+}
 
 /**
  * Implementation of OrdersCoordinator with pure action-based navigation
  */
 @Singleton
 class OrdersCoordinatorImpl @Inject constructor(
-    override val parent: MainCoordinatorImpl?
-) : Coordinator {
+    @Named("MaineCoordinator") override val parent: Lazy<Coordinator>?
+) : OrdersCoordinator {
 
-    override fun setupNavigation(builder: NavHostBuilder) {
-        builder.composable("orders_list_screen") {
-            // OrdersListScreen composable will be added here
-        }
-        builder.composable("order_details_screen") { param ->
-            // OrderDetailsScreen composable will be added here
-            // param contains the orderId
-        }
+    override fun setupNavigation(builder: NavGraphBuilder) {
+       builder.ordersGraph()
     }
 
-    @Composable
     override fun handle(action: CoordinatorAction) {
-        when (action) {
-            is OrdersCoordinatorAction -> handleOrdersAction(action)
-            else -> parent?.handle(action)
+         when (action) {
+            is OrdersCoordinatorAction -> {
+                handleOrdersAction(action)
+            }
+            else -> parent?.get()?.handle(action)
         }
     }
 
-    private fun handleOrdersAction(action: OrdersCoordinatorAction) {
+    override fun handleOrdersAction(action: OrdersCoordinatorAction) {
         when (action) {
             is OrdersCoordinatorAction.ShowOrdersList -> {
                 navigate("orders_list_screen")
@@ -46,8 +51,7 @@ class OrdersCoordinatorImpl @Inject constructor(
                 navigate("order_details_screen", action.orderId)
             }
             is OrdersCoordinatorAction.BackToMain -> {
-                // Handle back navigation - use navigator directly
-               navigate("main_screen")
+                // Use global back action
             }
         }
     }

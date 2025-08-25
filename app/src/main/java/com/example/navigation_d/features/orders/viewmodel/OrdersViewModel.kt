@@ -8,10 +8,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
-    private val ordersCoordinator: OrdersCoordinator
+   @Named("OrdersCoordinator") private val ordersCoordinator: OrdersCoordinator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrdersUiState())

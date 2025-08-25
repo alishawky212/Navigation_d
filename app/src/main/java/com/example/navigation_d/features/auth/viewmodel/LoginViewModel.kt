@@ -2,6 +2,7 @@ package com.example.navigation_d.features.auth.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.navigation_d.features.auth.coordinator.AuthCoordinator
 import com.example.navigation_d.features.auth.coordinator.AuthCoordinatorImpl
 import com.example.navigation_d.navigation.contract.AuthCoordinatorAction
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -10,10 +11,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authCoordinator: AuthCoordinatorImpl
+    @Named("AuthCoordinator") private val authCoordinator: AuthCoordinator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())

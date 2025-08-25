@@ -12,6 +12,14 @@ import com.example.navigation_d.navigation.Navigator
  */
 interface RootCoordinator : HostCoordinator {
     val navigator: Navigator
+    
+    /**
+     * Handle general actions
+     * @return true if the action was handled, false otherwise
+     */
+
     @Composable
     fun start(action: AppCoordinatorAction)
+    @Composable
+    fun renderNavHost()
 }

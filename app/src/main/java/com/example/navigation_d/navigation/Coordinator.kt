@@ -1,7 +1,8 @@
 package com.example.navigation_d.navigation
 
-import androidx.compose.runtime.Composable
+import androidx.navigation.NavGraphBuilder
 import com.example.navigation_d.navigation.contract.CoordinatorAction
+import dagger.Lazy
 
 /**
  * Core interface that all coordinators implement based on the reference pattern.
@@ -12,30 +13,30 @@ interface Coordinator {
     /**
      * Reference to parent coordinator for hierarchical navigation
      */
-    val parent: Coordinator?
+    val parent: Lazy<Coordinator>?
     
     /**
      * Navigate to a route, delegating to parent if not handled locally
      */
     fun navigate(route: String) {
-        parent?.navigate(route)
+        parent?.get()?.navigate(route)
     }
 
     fun navigate(route: String, params: Any?) {
-        parent?.navigate(route, params)
+        parent?.get()?.navigate(route, params)
     }
     
     /**
      * Set up navigation routes for this coordinator
      */
-    fun setupNavigation(builder: NavHostBuilder) {
+    fun setupNavigation(builder: NavGraphBuilder) {
         // Default implementation can be overridden
     }
     
     /**
      * Handle coordinator actions
+     * @return true if the action was handled, false otherwise
      */
-    @Composable
     fun handle(action: CoordinatorAction)
 }
 
@@ -44,7 +45,7 @@ interface Coordinator {
  */
 interface Host {
     val activeCoordinator: Coordinator?
-    var rootBuilder: NavHostBuilder?
+    var rootBuilder: NavGraphBuilder?
         get() = null
         set(value) {}
 }

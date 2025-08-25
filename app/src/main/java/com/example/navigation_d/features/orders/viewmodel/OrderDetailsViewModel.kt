@@ -3,15 +3,17 @@ package com.example.navigation_d.features.orders.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.example.navigation_d.features.orders.coordinator.OrdersCoordinator
+import com.example.navigation_d.navigation.contract.OrdersCoordinatorAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class OrderDetailsViewModel @Inject constructor(
-    private val ordersCoordinator: OrdersCoordinator,
+    @Named("OrdersCoordinator") private val ordersCoordinator: OrdersCoordinator,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 

@@ -4,7 +4,6 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.navigation_d.features.auth.screens.LoginScreen
-import com.example.navigation_d.features.profile.screens.SettingsScreen
 import com.example.navigation_d.navigation.NavigationRoutes
 
 /**
@@ -20,8 +19,8 @@ fun NavGraphBuilder.authGraph() {
             LoginScreen()
         }
         
-        composable(NavigationRoutes.Auth.SETTINGS) {
-            SettingsScreen()
-        }
+//        composable(NavigationRoutes.Auth.SETTINGS) {
+//            SettingsScreen()
+//        }
     }
 }

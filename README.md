@@ -1,131 +1,122 @@
-# Android Navigation with Action-Based Coordinator Pattern
+# Android Navigation with Coordinator Pattern
 
-A modern Android application showcasing advanced navigation architecture using a **pure action-based Coordinator Pattern** with Jetpack Compose, Navigation Component, and Hilt for dependency injection.
+A modern Android application showcasing a clean navigation architecture using the **Coordinator Pattern** with Jetpack Compose and Hilt for dependency injection.
 
 ## 🏗 Architecture
 
-The app follows a **clean action-based Coordinator Pattern** with MVVM architecture and parent-child coordinator hierarchy:
+The app follows a **Coordinator Pattern** with MVVM architecture, focusing on clean separation of concerns and maintainable navigation.
 
 ### Core Components
-- **UI Layer**: Built with Jetpack Compose
-- **Navigation**: Pure action-based Coordinator Pattern with sealed class actions
-- **Dependency Injection**: Hilt with proper interface abstractions and parent-child hierarchy
-- **State Management**: ViewModel with StateFlow and Compose state
-- **Theming**: Material 3 theming system
+- **UI Layer**: Jetpack Compose for modern UI
+- **Navigation**: Coordinator Pattern with type-safe routing
+- **Dependency Injection**: Hilt for dependency management
+- **State Management**: ViewModel with StateFlow
 
-### Action-Based Navigation Flow
+### Navigation Flow
 ```
-ViewModels → Actions → Coordinators → AppNavigator → NavController
+UI Components → ViewModel → Coordinator → Navigation
 ```
-
-### Coordinator Hierarchy Structure
-The navigation uses a parent-child coordinator hierarchy with action-based delegation:
-
-```
-📱 RootCoordinator (parent: null)
-├── 🔐 AuthCoordinator (parent: RootCoordinator)
-│   ├── LoginScreen
-│   └── SettingsScreen
-├── 🏠 MainCoordinator (parent: RootCoordinator)
-│   └── MainScreen
-├── 📦 OrdersCoordinator (parent: RootCoordinator)
-│   ├── OrdersListScreen
-│   └── OrderDetailsScreen
-└── 👤 ProfileNavigator (parent: RootCoordinator)
-    ├── ProfileScreen
-    ├── EditProfileScreen
-    └── SavedItemsScreen
-```
-
-### Package Structure
-```
-com.example.navigation_d/
-├── di/                          # Dependency injection modules
-├── features/                    # Feature modules (by domain)
-│   ├── auth/                   # Authentication feature
-│   │   ├── coordinator/        # AuthCoordinator
-│   │   ├── navigation/         # Auth navigation graph
-│   │   └── screens/           # Login, Settings screens
-│   ├── main/                   # Main app feature
-│   │   ├── coordinator/        # MainCoordinator
-│   │   ├── navigation/         # Main navigation graph
-│   │   └── screens/           # Main screen
-│   ├── orders/                 # Orders feature
-│   │   ├── coordinator/        # OrdersCoordinator
-│   │   ├── navigation/         # Orders navigation graph
-│   │   └── screens/           # Orders list, details screens
-│   ├── profile/                # Profile feature
-│   │   ├── navigation/         # Profile navigation graph
-│   │   └── screens/           # Profile, Settings screens
-│   ├── home/                   # Legacy home feature
-│   └── details/                # Legacy details feature
-├── navigation/                  # Core navigation infrastructure
-│   ├── contract/               # Navigation interfaces & action definitions
-│   │   ├── BaseNavigator.kt    # Base coordinator interface with parent-child hierarchy
-│   │   ├── RootCoordinator.kt  # Root coordinator interface
-│   │   ├── AppNavigator.kt     # App navigation interface
-│   │   └── CoordinatorAction.kt # Sealed class action definitions
-│   ├── AppNavigatorImpl.kt     # Main navigation implementation
-│   ├── RootCoordinatorImpl.kt  # Root coordinator implementation
-│   ├── NavigationRoutes.kt     # Route definitions
-│   └── NavGraph.kt            # Main navigation graph
-├── preview/                     # Preview utilities
-├── ui/                         # Base UI components
-└── MainActivity.kt             # Main activity with navigation setup
-```
-
-## 🛠 Setup
-
-1. Clone the repository
-2. Open the project in Android Studio Flamingo (2022.2.1) or later
-3. Sync the project with Gradle files
-4. Run the app on an emulator or physical device
 
 ## 🚀 Features
 
-### Action-Based Navigation Features
-- **Pure Action-Based Navigation**: All navigation uses sealed class actions for type safety
-- **Parent-Child Coordinator Hierarchy**: Proper delegation and separation of concerns
-- **Multi-Graph Navigation**: Separate navigation graphs for Auth, Main, Orders, and Profile
-- **Deep Link Support**: Proper deep link handling through AppNavigator
-- **Back Navigation**: Consistent back navigation across all screens
-- **Action Delegation**: Unhandled actions automatically delegate to parent coordinators
+### Coordinator Pattern Implementation
+- **RootCoordinator**: Manages top-level navigation
+- **Feature Coordinators**: Dedicated coordinators for Auth, Main, and Orders
+- **Clean Navigation**: Navigation logic separated from UI
+- **Type Safety**: Sealed classes for navigation actions
 
-### Navigation Actions
-Each coordinator uses strongly-typed sealed class actions:
+### Back Navigation
+- Screen-level back handling with `BackHandler`
+- Each screen manages its own back navigation
+- No global back action handling for simpler flow
 
+## 🛠 Usage
+
+### Creating a New Feature
+1. Create a new package under `features/`
+2. Define your coordinator interface:
+   ```kotlin
+   interface FeatureCoordinator : Coordinator {
+       fun handleFeatureAction(action: FeatureAction)
+   }
+   ```
+3. Implement the coordinator:
+   ```kotlin
+   class FeatureCoordinatorImpl @Inject constructor(
+       private val navigator: Navigator,
+       @Named("ParentCoordinator") override val parent: Lazy<Coordinator>?
+   ) : FeatureCoordinator {
+       override fun handleFeatureAction(action: FeatureAction) {
+           when (action) {
+               is FeatureAction.NavigateToScreen -> navigator.navigateTo(action.route)
+           }
+       }
+   }
+   ```
+
+### Handling Back Navigation
 ```kotlin
-// Auth Actions
-sealed class AuthCoordinatorAction : CoordinatorAction {
-    object ShowLogin : AuthCoordinatorAction()
-    object ShowSettings : AuthCoordinatorAction()
-    data class LoginSuccess(val userId: String) : AuthCoordinatorAction()
-    object Logout : AuthCoordinatorAction()
+@Composable
+fun MyScreen() {
+    BackHandler(onBack = {
+        // Handle back press
+        viewModel.onBackClicked()
+    })
+    
+    // Screen content
 }
+```
 
-// Main Actions
-sealed class MainCoordinatorAction : CoordinatorAction {
-    object ShowMainScreen : MainCoordinatorAction()
-    object ShowOrders : MainCoordinatorAction()
-    object ShowProfile : MainCoordinatorAction()
-    object Logout : MainCoordinatorAction()
-}
+## 📦 Project Structure
+```
+com.example.navigation_d/
+├── di/                          # Dependency injection
+├── features/                    # Feature modules
+│   ├── auth/                   # Authentication
+│   ├── main/                   # Main app flow
+│   └── orders/                 # Orders feature
+├── navigation/                  # Core navigation
+│   ├── contract/               # Navigation interfaces
+│   ├── AppNavigatorImpl.kt     # Navigation implementation
+│   └── NavigationRoutes.kt     # Route definitions
+└── MainActivity.kt             # App entry point
+```
 
-// Orders Actions
-sealed class OrdersCoordinatorAction : CoordinatorAction {
-    object ShowOrdersList : OrdersCoordinatorAction()
-    data class ShowOrderDetails(val orderId: String) : OrdersCoordinatorAction()
-    object BackToMain : OrdersCoordinatorAction()
-}
+## 🏆 Best Practices
 
-// Profile Actions
-sealed class ProfileCoordinatorAction : CoordinatorAction {
-    object ShowProfile : ProfileCoordinatorAction()
-    object ShowSettings : ProfileCoordinatorAction()
-    object ShowEditProfile : ProfileCoordinatorAction()
-    object ShowSavedItems : ProfileCoordinatorAction()
-    object ShowOrderHistory : ProfileCoordinatorAction()
-}
+1. **Coordinators**
+   - One coordinator per feature
+   - Handle navigation only
+   - Keep business logic in ViewModels
+
+2. **Back Navigation**
+   - Use `BackHandler` in composables
+   - Keep back logic with UI components
+
+3. **Dependency Injection**
+   - Constructor injection
+   - Use `@Named` for multiple instances
+
+4. **Testing**
+   - Test navigation actions
+   - Mock dependencies
+
+## 🚀 Getting Started
+
+1. Clone the repository
+2. Open in Android Studio
+3. Run on an emulator or device
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit changes
+4. Create a Pull Request
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE)
 ```
 
 ### Screen Features

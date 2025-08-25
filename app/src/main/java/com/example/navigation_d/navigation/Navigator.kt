@@ -3,12 +3,14 @@ package com.example.navigation_d.navigation
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.navigation_d.navigation.NavigationRoutes.AUTH_GRAPH
+import javax.inject.Inject
 
-class Navigator(initialRoute: String) {
+class Navigator @Inject constructor() {
 
     private data class Route(val name: String, val param: Any?)
 
-    private var _route by mutableStateOf(Route(initialRoute, null))
+    private var _route by mutableStateOf(Route(AUTH_GRAPH, null))
 
     val route get() = _route.name
     val param get() = _route.param

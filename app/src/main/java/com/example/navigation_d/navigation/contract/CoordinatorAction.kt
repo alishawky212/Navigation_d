@@ -12,7 +12,6 @@ sealed interface CoordinatorAction
 sealed class GeneralAction : CoordinatorAction {
     data class Done(val data: Any? = null) : GeneralAction()
     data class Cancel(val reason: String? = null) : GeneralAction()
-    object Back : GeneralAction()
 }
 
 /**
