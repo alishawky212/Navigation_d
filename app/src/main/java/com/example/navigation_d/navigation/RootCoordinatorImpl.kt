@@ -1,5 +1,6 @@
 package com.example.navigation_d.navigation
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -7,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.navigation_d.navigation.contract.AppCoordinatorAction
 import com.example.navigation_d.navigation.contract.CoordinatorAction
@@ -59,7 +61,8 @@ class RootCoordinatorImpl @Inject constructor(
     }
     
     /**
-     * Centralized NavHost rendering method - responsible for showing all nav graphs
+     * Centralized NavHost rendering method - responsible for showing the root navigation graph
+     * and delegating to child coordinator graphs correctly.
      */
     @Composable
     override fun renderNavHost() {
@@ -70,22 +73,55 @@ class RootCoordinatorImpl @Inject constructor(
             navigator.setNavController(navController)
         }
 
-        // Handle system back button
+        // Handle system back button - explicitly delegate to NavController for proper system integration
         BackHandler(enabled = true) {
-            // Handle system back through our coordinator system first,
-            // then fall back to Navigator's system back handling
+            Log.d("RootCoordinator", "System back button pressed")
+            // Try to handle back press with our coordinator system first
             if (!navigateBack()) {
-                navigator.handleSystemBack()
+                Log.d("RootCoordinator", "Coordinator couldn't handle back, delegating to system")
+                // We're at the root of the navigation stack in our coordinator system
+                // Let the system handle the back press
+                if (!navController.popBackStack()) {
+                    Log.d("RootCoordinator", "No more back stack entries, exiting app")
+                    // This is truly the end - no more back stack entries
+                    // In a real app, you might want to show a confirmation dialog here
+                }
             }
+        }
+
+        // Observe current destination for debugging
+        val currentBackStackEntry = navController.currentBackStackEntryAsState().value
+        LaunchedEffect(currentBackStackEntry) {
+            val route = currentBackStackEntry?.destination?.route
+            Log.d("Navigation", "Current destination: $route")
+            val previousBackStackEntry = navController.previousBackStackEntry
+            Log.d(
+                "Navigation",
+                "Previous destination: ${previousBackStackEntry?.destination?.route}"
+            )
+            Log.d("Navigation", "Can pop back stack: ${previousBackStackEntry != null}")
+        }
+
+        // Determine which graph to show based on active coordinator
+        val currentGraphRoute = when (activeCoordinator) {
+            mainCoordinator.get() -> NavigationRoutes.MAIN_GRAPH
+            else -> NavigationRoutes.AUTH_GRAPH
         }
 
         NavHost(
             navController = navController,
-            startDestination = NavigationRoutes.AUTH_GRAPH
+            startDestination = currentGraphRoute
         ) {
-            // Set up ALL coordinator graphs, not just the active one
+            // Set up navigation graphs based on active coordinator
             authCoordinator.get().setupNavigation(this)
             mainCoordinator.get().setupNavigation(this)
+        }
+
+        // Initialize the activeCoordinator at start only if it's not set (initial launch)
+        LaunchedEffect(Unit) {
+            if (_activeCoordinator == null) {
+                _activeCoordinator = authCoordinator.get()
+            }
         }
     }
     
@@ -93,12 +129,13 @@ class RootCoordinatorImpl @Inject constructor(
         return when (action) {
             is AppCoordinatorAction.StartAuthFlow -> {
                 _activeCoordinator = authCoordinator.get()
-                navigator.navigateTo("auth_graph")
+                navigator.navigateTo(NavigationRoutes.AUTH_GRAPH)
                 true
             }
             is AppCoordinatorAction.StartMainFlow -> {
                 _activeCoordinator = mainCoordinator.get()
-                navigator.navigateTo("main_graph")
+                // Make main graph the root of back stack so back button exits app
+                navigator.navigateToAsRoot(NavigationRoutes.MAIN_GRAPH)
                 true
             }
             is AppCoordinatorAction.NavigateToRoute -> {
@@ -129,14 +166,50 @@ class RootCoordinatorImpl @Inject constructor(
         navigator.navigateTo(route, params)
     }
 
+    /**
+     * Navigate to a route and make it the root of the back stack
+     */
+    fun navigateToAsRoot(route: String, params: Any? = null) {
+        navigator.navigateToAsRoot(route, params)
+    }
+
     override fun navigateBack(): Boolean {
         // First try to let the active coordinator handle it
-        if (_activeCoordinator?.navigateBack() == true) {
-            return true
+//        if (_activeCoordinator?.navigateBack() == true) {
+//            return true
+//        }
+
+        // If we have an active coordinator but it couldn't handle back navigation,
+        // we need to check if we're at the start destination of that coordinator's graph
+        if (_activeCoordinator != null) {
+            // If we're in main coordinator, go back to auth coordinator
+            if (_activeCoordinator == mainCoordinator.get()) {
+                navigator.popBackStack()
+                return true
+            }
+
+            // If we're in auth coordinator and it couldn't handle back,
+            // and we're at its start destination (login screen), 
+            // return false to let system handle app exit
+            if (_activeCoordinator == authCoordinator.get()) {
+                _activeCoordinator = null
+                navigator.popBackStack()
+                return false // Let system handle exiting
+            }
         }
 
-        // If no active coordinator or it didn't handle back, we're at root level
-        // Return false to indicate system should handle it (e.g., exit app)
+        // If we're already at the root level with no active coordinator,
+        // we need to check if there's anything in the Android back stack to pop
+        val navController = navigator.getNavController()
+        val canGoBack = navController?.previousBackStackEntry != null
+
+        if (canGoBack) {
+            // There's still something in the Android back stack, so pop it
+            return navigator.popBackStack()
+        }
+
+        // We're truly at the end - no coordinator and no back stack
+        // Return false to let the system handle it (exit the app)
         return false
     }
 

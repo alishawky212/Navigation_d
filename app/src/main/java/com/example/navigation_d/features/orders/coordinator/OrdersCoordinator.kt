@@ -10,6 +10,8 @@ import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
+import android.util.Log
+import com.example.navigation_d.navigation.NavigationRoutes
 
 /**
  * Implementation of Orders coordinator with pure action-based navigation
@@ -19,10 +21,6 @@ import javax.inject.Singleton
 class OrdersCoordinator @Inject constructor(
     @Named("MainCoordinator") override val parent: Lazy<Coordinator>?
 ) : Coordinator {
-
-    // Track the current screen within the orders flow
-    private var currentScreen: String = "orders_list_screen"
-    private var navigationHistory = mutableListOf<String>()
 
     override fun setupNavigation(builder: NavGraphBuilder) {
         builder.ordersGraph()
@@ -51,24 +49,13 @@ class OrdersCoordinator @Inject constructor(
     private fun handleOrdersAction(action: OrdersCoordinatorAction) {
         when (action) {
             is OrdersCoordinatorAction.ShowOrdersList -> {
-                // If we're already showing details, add to history
-                if (currentScreen != "orders_list_screen") {
-                    navigationHistory.add(currentScreen)
-                }
-                currentScreen = "orders_list_screen"
-                navigate("orders_list_screen")
+                navigate(NavigationRoutes.Orders.ORDERS_LIST)
             }
             is OrdersCoordinatorAction.ShowOrderDetails -> {
-                // Add current screen to history before navigating
-                navigationHistory.add(currentScreen)
-                currentScreen = "order_details_screen"
-                navigate("order_details_screen", action.orderId)
+                navigate(NavigationRoutes.Orders.orderDetailsWithId(action.orderId))
             }
             is OrdersCoordinatorAction.BackToMain -> {
-                // Clear our history and go back to main
-                navigationHistory.clear()
-                currentScreen = "orders_list_screen"
-                // Let parent handle it
+                // Let parent handle going back to main
                 parent?.get()?.navigateUp() ?: false
             }
         }
@@ -83,37 +70,18 @@ class OrdersCoordinator @Inject constructor(
     }
 
     override fun navigateBack(): Boolean {
-        // If we have internal navigation history, go back
-        if (navigationHistory.isNotEmpty()) {
-            currentScreen = navigationHistory.removeLastOrNull() ?: "orders_list_screen"
-            navigate(currentScreen)
-            return true
-        }
-
-        // If we're on the main orders screen with no history, delegate to parent
-        return if (currentScreen == "orders_list_screen") {
-            parent?.get()?.navigateBack() ?: false
-        } else {
-            // Otherwise go back to orders list
-            currentScreen = "orders_list_screen"
-            navigate(currentScreen)
-            true
-        }
+        Log.d("OrdersCoordinator", "navigateBack called")
+        // Delegate back navigation to parent coordinator
+        return parent?.get()?.navigateBack() ?: false
     }
 
     override fun navigateUp(): Boolean {
-        // Up navigation always goes to the orders list
-        if (currentScreen != "orders_list_screen") {
-            currentScreen = "orders_list_screen"
-            navigate(currentScreen)
-            return true
-        }
-        // If already on orders list, delegate to parent
+        // Delegate up navigation to parent coordinator
         return parent?.get()?.navigateUp() ?: false
     }
 
     override fun canNavigateBack(): Boolean {
-        // We can navigate back if we have history or aren't on the list screen
-        return navigationHistory.isNotEmpty() || currentScreen != "orders_list_screen"
+        // Delegate back navigation capability check to parent
+        return parent?.get()?.canNavigateBack() ?: false
     }
 }

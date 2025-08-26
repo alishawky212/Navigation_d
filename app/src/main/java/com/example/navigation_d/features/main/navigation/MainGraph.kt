@@ -4,6 +4,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.navigation_d.features.main.screens.MainScreen
+import com.example.navigation_d.features.orders.navigation.ordersGraph
 import com.example.navigation_d.navigation.NavigationRoutes
 
 /**
@@ -18,5 +19,8 @@ fun NavGraphBuilder.mainGraph() {
         composable(NavigationRoutes.Main.MAIN_SCREEN) {
             MainScreen()
         }
+
+        // Add nested orders graph
+        ordersGraph()
     }
 }

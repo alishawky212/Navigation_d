@@ -26,13 +26,15 @@ interface Coordinator {
     fun navigate(route: String, params: Any?) {
         parent?.get()?.navigate(route, params)
     }
-    
+
     /**
      * Navigate back to the previous screen
      * @return true if back navigation was handled, false otherwise
      */
     fun navigateBack(): Boolean {
-        // Default implementation delegates to parent
+        // Default implementation delegates to parent if available
+        // Each coordinator should override this with their own implementation
+        // that checks internal navigation state before delegating
         return parent?.get()?.navigateBack() ?: false
     }
 
@@ -84,14 +86,6 @@ interface Coordinator {
  */
 interface Host {
     val activeCoordinator: Coordinator?
-
-    /**
-     * Optional builder reference for dynamic navigation setup
-     * Can be used by coordinators that need to modify navigation dynamically
-     */
-    var rootBuilder: NavGraphBuilder?
-        get() = null
-        set(value) {}
 
     /**
      * Activate a child coordinator

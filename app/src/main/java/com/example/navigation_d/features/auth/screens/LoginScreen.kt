@@ -23,11 +23,6 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // Handle system back button press
-    BackHandler {
-        viewModel.onBackClick()
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(

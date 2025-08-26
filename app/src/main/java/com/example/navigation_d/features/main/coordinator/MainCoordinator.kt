@@ -8,6 +8,7 @@ import com.example.navigation_d.features.main.navigation.mainGraph
 import com.example.navigation_d.features.orders.navigation.ordersGraph
 import com.example.navigation_d.navigation.Coordinator
 import com.example.navigation_d.navigation.HostCoordinator
+import com.example.navigation_d.navigation.NavigationRoutes
 import com.example.navigation_d.navigation.contract.CoordinatorAction
 import com.example.navigation_d.navigation.contract.MainCoordinatorAction
 import com.example.navigation_d.navigation.contract.NavigationAction
@@ -15,6 +16,8 @@ import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.inject.Named
+import android.util.Log
+import com.example.navigation_d.navigation.NavigationRoutes.MAIN_GRAPH
 
 /**
  * Implementation of Main coordinator with pure action-based navigation
@@ -28,12 +31,8 @@ class MainCoordinator @Inject constructor(
 
     private var _activeCoordinator by mutableStateOf<Coordinator?>(null)
 
-    override var rootBuilder: NavGraphBuilder? = null
-
     override fun setupNavigation(builder: NavGraphBuilder) {
         builder.mainGraph()
-        // Include orders as nested graph within main
-        builder.ordersGraph()
     }
 
     override fun handle(action: CoordinatorAction): Boolean {
@@ -55,12 +54,12 @@ class MainCoordinator @Inject constructor(
                     is NavigationAction.Home -> {
                         // If we're already on main screen, do nothing
                         if (_activeCoordinator == null) {
-                            navigate("main_screen")
+                            navigate(MAIN_GRAPH)
                             true
                         } else {
                             // Deactivate child and go to main screen
                             deactivateCoordinator()
-                            navigate("main_screen")
+                            navigate(MAIN_GRAPH)
                             true
                         }
                     }
@@ -76,22 +75,27 @@ class MainCoordinator @Inject constructor(
      * Handle Main-specific actions
      */
     private fun handleMainAction(action: MainCoordinatorAction) {
+        Log.d("MainCoordinator", "Handling action: $action")
         when (action) {
             is MainCoordinatorAction.ShowMainScreen -> {
+                Log.d("MainCoordinator", "Showing main screen")
                 deactivateCoordinator() // Deactivate child coordinator
-                navigate("main_screen")
+                navigate(NavigationRoutes.Main.MAIN_SCREEN)
             }
             is MainCoordinatorAction.ShowOrders -> {
+                Log.d("MainCoordinator", "Showing orders")
                 activateCoordinator(ordersCoordinator.get())
-                navigate("orders_graph")
+                navigate(NavigationRoutes.ORDERS_GRAPH)
             }
             is MainCoordinatorAction.ShowProfile -> {
+                Log.d("MainCoordinator", "Showing profile")
                 deactivateCoordinator() // Deactivate child coordinator
-                navigate("profile_screen")
+                navigate(NavigationRoutes.Profile.PROFILE_SCREEN)
             }
             is MainCoordinatorAction.Logout -> {
+                Log.d("MainCoordinator", "Logging out")
                 deactivateCoordinator() // Clean up child coordinator
-                navigate("auth_graph")
+                navigate(NavigationRoutes.AUTH_GRAPH)
             }
         }
     }
@@ -118,19 +122,26 @@ class MainCoordinator @Inject constructor(
     }
 
     override fun navigateBack(): Boolean {
+        Log.d(
+            "MainCoordinator",
+            "navigateBack called, activeCoordinator: ${_activeCoordinator != null}"
+        )
         // First let child coordinator try to handle back
         if (_activeCoordinator?.navigateBack() == true) {
+            Log.d("MainCoordinator", "Child coordinator handled back")
             return true
         }
 
         // If child exists but couldn't handle back, deactivate it and return to main screen
         if (_activeCoordinator != null) {
+            Log.d("MainCoordinator", "Deactivating child coordinator and returning to main screen")
             deactivateCoordinator()
-            navigate("main_screen")
+            navigate(NavigationRoutes.Main.MAIN_SCREEN)
             return true
         }
 
         // Otherwise delegate to parent
+        Log.d("MainCoordinator", "Delegating to parent")
         return parent?.get()?.navigateBack() ?: false
     }
 
@@ -138,7 +149,7 @@ class MainCoordinator @Inject constructor(
         // In MainCoordinator, up always means go back to main screen
         if (_activeCoordinator != null) {
             deactivateCoordinator()
-            navigate("main_screen")
+            navigate(NavigationRoutes.Main.MAIN_SCREEN)
             return true
         }
         return false

@@ -18,9 +18,6 @@ fun NavGraphBuilder.authGraph() {
         composable(NavigationRoutes.Auth.LOGIN) {
             LoginScreen()
         }
-        
-//        composable(NavigationRoutes.Auth.SETTINGS) {
-//            SettingsScreen()
-//        }
+
     }
 }

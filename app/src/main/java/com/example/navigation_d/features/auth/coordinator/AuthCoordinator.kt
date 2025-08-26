@@ -3,6 +3,8 @@ package com.example.navigation_d.features.auth.coordinator
 import androidx.navigation.NavGraphBuilder
 import com.example.navigation_d.features.auth.navigation.authGraph
 import com.example.navigation_d.navigation.Coordinator
+import com.example.navigation_d.navigation.NavigationRoutes
+import com.example.navigation_d.navigation.contract.AppCoordinatorAction
 import com.example.navigation_d.navigation.contract.AuthCoordinatorAction
 import com.example.navigation_d.navigation.contract.CoordinatorAction
 import dagger.Lazy
@@ -41,22 +43,27 @@ class AuthCoordinator @Inject constructor(
     private fun handleAuthAction(action: AuthCoordinatorAction) {
         when (action) {
             is AuthCoordinatorAction.ShowLogin -> {
-                currentScreen = "login_screen"
-                navigate("login_screen")
+                currentScreen = NavigationRoutes.Auth.LOGIN
+                navigate(NavigationRoutes.Auth.LOGIN)
             }
             is AuthCoordinatorAction.ShowSettings -> {
-                currentScreen = "settings_screen"
-                navigate("settings_screen")
+                currentScreen = NavigationRoutes.Auth.SETTINGS
+                navigate(NavigationRoutes.Auth.SETTINGS)
             }
             is AuthCoordinatorAction.LoginSuccess -> {
-                currentScreen = "main_graph"
-                navigate("main_graph")
+                // Delegate to parent (RootCoordinator) to start main flow as root
+                parent?.get()?.handle(AppCoordinatorAction.StartMainFlow)
             }
             is AuthCoordinatorAction.Logout -> {
-                currentScreen = "login_screen"
-                navigate("login_screen")
+                currentScreen = NavigationRoutes.Auth.LOGIN
+                navigate(NavigationRoutes.Auth.LOGIN)
             }
         }
     }
-}
 
+    override fun navigateBack(): Boolean {
+        // At login screen (start destination), we should not delegate back to parent
+        // as this would create an infinite loop. Return false to let system handle it.
+        return false
+    }
+}
