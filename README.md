@@ -224,6 +224,98 @@ The app includes comprehensive preview support:
 - All navigation flows are testable through the coordinator interfaces
 - Mock coordinators can be provided for isolated testing
 
+## Navigation Sample
+
+This project demonstrates a hierarchical coordinator-based navigation pattern for Android Compose
+apps.
+
+## Navigation Hierarchy
+
+The navigation structure follows this hierarchy:
+
+```
+AppCoordinator (RootCoordinator)
+├── AuthCoordinator
+│   ├── LoginScreen
+│   └── SettingsScreen
+└── MainCoordinator (HostCoordinator)
+    ├── MainScreen
+    └── OrdersCoordinator
+        ├── OrdersListScreen
+        └── OrderDetailsScreen
+```
+
+### Key Components
+
+1. **AppCoordinator**: The root coordinator that manages navigation between auth and main flows.
+    - Implements `RootCoordinator` interface
+    - Contains the main NavHost
+    - Manages child coordinators (Auth and Main)
+
+2. **AuthCoordinator**: Handles the authentication flow.
+    - Manages login and settings screens
+    - Reports login success to parent coordinator
+
+3. **MainCoordinator**: Manages the main app flow after authentication.
+    - Implements `HostCoordinator` to manage child coordinators
+    - Hosts the OrdersCoordinator
+    - Handles main screen and delegation to child flows
+
+4. **OrdersCoordinator**: Manages the orders-related screens.
+    - Handles orders list and order details navigation
+    - Manages parameters for order details navigation
+
+### Screens
+
+- **LoginScreen**: User authentication entry point
+- **SettingsScreen**: App settings configuration
+- **MainScreen**: Home screen after login
+- **OrdersListScreen**: Displays list of orders
+- **OrderDetailsScreen**: Shows detailed information about a specific order
+
+## Implementation Details
+
+### Navigation Contract
+
+The navigation is driven by typed actions defined in `CoordinatorAction` sealed interface
+hierarchies:
+
+- `AppCoordinatorAction`: Top-level navigation actions
+- `AuthCoordinatorAction`: Auth-specific actions
+- `MainCoordinatorAction`: Main flow actions
+- `OrdersCoordinatorAction`: Orders-specific actions
+
+### Dependency Injection
+
+Coordinators are provided through Dagger Hilt, with proper hierarchical dependencies:
+
+- `NavigationModule`: Binds coordinator implementations to their interfaces
+
+### Coordinator Pattern Benefits
+
+1. **Modular Navigation**: Each flow has its own coordinator
+2. **Type-Safe Navigation**: Actions are strongly typed
+3. **Hierarchical Delegation**: Actions bubble up if not handled
+4. **Independent Testing**: Each coordinator can be tested in isolation
+5. **Separation of Concerns**: Navigation logic is separate from UI
+
+## Usage
+
+To navigate, dispatch an appropriate action to the current coordinator:
+
+```kotlin
+// Example: Navigate to orders from main screen
+handle(MainCoordinatorAction.ShowOrders)
+
+// Example: Show order details with parameter
+handle(OrdersCoordinatorAction.ShowOrderDetails(orderId))
+
+// Example: Navigate back
+handle(NavigationAction.Back)
+```
+
+The coordinator system will handle the action at the appropriate level and perform the navigation.
+
 ## 📦 Dependencies
 
 ### Core Dependencies

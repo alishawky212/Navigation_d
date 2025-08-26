@@ -6,38 +6,50 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import com.example.navigation_d.navigation.NavigationRoutes.AUTH_GRAPH
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Navigator class that handles navigation operations using NavController
+ * This is a central component for coordinating navigation across the app
+ */
 @Singleton
 class Navigator @Inject constructor() {
 
+    // Track the current route for state management
     private var _currentRoute by mutableStateOf(AUTH_GRAPH)
-    private var navController: NavController? = null
 
+    // NavHostController reference for performing navigation
+    private var navController: NavHostController? = null
+
+    // Expose current route as read-only property
     val route: String get() = _currentRoute
 
     /**
-     * Set the NavController for navigation integration
+     * Set the NavHostController for navigation integration
+     * Called by the root coordinator during initialization
      */
-    fun setNavController(controller: NavController) {
+    fun setNavController(controller: NavHostController) {
         navController = controller
-        Log.d("Navigator", "NavController set")
+        Log.d(TAG, "NavHostController set")
     }
 
     /**
      * Navigate to a new route with optional parameters
+     * @param route The destination route
+     * @param params Optional parameters for the destination
      */
     fun navigateTo(route: String, params: Any? = null) {
-        Log.d("Navigator", "Navigating to $route")
+        Log.d(TAG, "Navigating to $route")
         _currentRoute = route
 
         // Determine if this is a top-level destination
         val isTopLevelDestination = route == AUTH_GRAPH || route == NavigationRoutes.MAIN_GRAPH
 
         try {
-            // Actually navigate using NavController if available
+            // Actually navigate using NavHostController if available
             navController?.navigate(route) {
                 // For top-level destinations, set different behavior
                 if (isTopLevelDestination) {
@@ -51,18 +63,20 @@ class Navigator @Inject constructor() {
                 // Restore state when navigating back to a destination
                 restoreState = true
             }
-            Log.d("Navigator", "Navigation complete. Current route: $route")
+            Log.d(TAG, "Navigation complete. Current route: $route")
         } catch (e: Exception) {
-            Log.e("Navigator", "Navigation failed: ${e.message}")
+            Log.e(TAG, "Navigation failed: ${e.message}")
         }
     }
 
     /**
      * Navigate to a route and make it the root of the back stack
      * This clears all previous entries from the back stack
+     * @param route The destination route
+     * @param params Optional parameters for the destination
      */
     fun navigateToAsRoot(route: String, params: Any? = null) {
-        Log.d("Navigator", "Setting $route as root")
+        Log.d(TAG, "Setting $route as root")
         _currentRoute = route
 
         try {
@@ -72,21 +86,23 @@ class Navigator @Inject constructor() {
                 // This clears the back stack
                 popUpTo(AUTH_GRAPH) { inclusive = true }
             }
-            Log.d("Navigator", "Root navigation complete")
+            Log.d(TAG, "Root navigation complete")
         } catch (e: Exception) {
-            Log.e("Navigator", "Root navigation failed: ${e.message}")
+            Log.e(TAG, "Root navigation failed: ${e.message}")
         }
     }
 
     /**
      * Reset navigation to a specific route and clear back stack
+     * @param route The destination route
+     * @param params Optional parameters for the destination
      */
     fun resetTo(route: String, params: Any? = null) {
-        Log.d("Navigator", "Resetting to $route")
+        Log.d(TAG, "Resetting to $route")
         _currentRoute = route
 
         try {
-            // Actually navigate using NavController if available and clear back stack
+            // Actually navigate using NavHostController if available and clear back stack
             navController?.navigate(route) {
                 launchSingleTop = true
                 // Clear back stack when resetting to a new route
@@ -94,9 +110,9 @@ class Navigator @Inject constructor() {
                     inclusive = true
                 }
             }
-            Log.d("Navigator", "Reset complete")
+            Log.d(TAG, "Reset complete")
         } catch (e: Exception) {
-            Log.e("Navigator", "Reset failed: ${e.message}")
+            Log.e(TAG, "Reset failed: ${e.message}")
         }
     }
 
@@ -110,31 +126,32 @@ class Navigator @Inject constructor() {
     /**
      * Pop the back stack to exit the current destination
      * Used for system-level navigation like app exit
-     *
      * @return true if the back stack was popped successfully, false otherwise
      */
     fun popBackStack(): Boolean {
         return try {
-            Log.d("Navigator", "Popping back stack")
+            Log.d(TAG, "Popping back stack")
             val result = navController?.popBackStack() ?: false
-            Log.d("Navigator", "Back stack popped: $result")
+            Log.d(TAG, "Back stack popped: $result")
             result
         } catch (e: Exception) {
-            Log.e("Navigator", "Error popping back stack: ${e.message}")
+            Log.e(TAG, "Error popping back stack: ${e.message}")
             false
         }
     }
 
     /**
-     * Get access to the NavController for specific operations
+     * Get access to the NavHostController for specific operations
      * Use with caution - prefer using Navigator methods when possible
+     * @return The current NavHostController instance, or null if not initialized
      */
-    fun getNavController(): NavController? {
+    fun getNavController(): NavHostController? {
         return navController
     }
 
     /**
-     * Check if back navigation is possible with the current NavController
+     * Check if back navigation is possible with the current NavHostController
+     * @return true if back navigation is possible, false otherwise
      */
     fun canGoBack(): Boolean {
         return navController?.previousBackStackEntry != null
@@ -150,10 +167,14 @@ class Navigator @Inject constructor() {
             val currentEntry = controller.currentBackStackEntry
             val previousEntry = controller.previousBackStackEntry
 
-            Log.d("Navigator", "Current destination: ${currentEntry?.destination?.route}")
-            Log.d("Navigator", "Previous destination: ${previousEntry?.destination?.route}")
+            Log.d(TAG, "Current destination: ${currentEntry?.destination?.route}")
+            Log.d(TAG, "Previous destination: ${previousEntry?.destination?.route}")
         } catch (e: Exception) {
-            Log.e("Navigator", "Error logging back stack: ${e.message}")
+            Log.e(TAG, "Error logging back stack: ${e.message}")
         }
+    }
+
+    companion object {
+        private const val TAG = "Navigator"
     }
 }

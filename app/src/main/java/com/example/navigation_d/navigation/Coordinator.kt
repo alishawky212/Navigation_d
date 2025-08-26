@@ -3,12 +3,14 @@ package com.example.navigation_d.navigation
 import androidx.navigation.NavGraphBuilder
 import com.example.navigation_d.navigation.contract.CoordinatorAction
 import com.example.navigation_d.navigation.contract.NavigationAction
+import com.example.navigation_d.navigation.contract.RootCoordinator
 import dagger.Lazy
 
 /**
  * Core interface that all coordinators implement based on the reference pattern.
  * Each coordinator can navigate, set up navigation, and handle actions.
  * It also holds a reference to its parent coordinator for hierarchical navigation.
+ * Navigation requests are delegated to the parent coordinator until they reach the root.
  */
 interface Coordinator {
     /**
@@ -18,17 +20,34 @@ interface Coordinator {
     
     /**
      * Navigate to a route, delegating to parent if not handled locally
+     * @param route The destination route
      */
     fun navigate(route: String) {
         parent?.get()?.navigate(route)
     }
 
+    /**
+     * Navigate to a route with parameters, delegating to parent
+     * @param route The destination route
+     * @param params Additional parameters for the navigation
+     */
     fun navigate(route: String, params: Any?) {
         parent?.get()?.navigate(route, params)
     }
 
     /**
+     * Execute actual navigation through the root coordinator
+     * @param route The destination route
+     * @param params Optional parameters for the destination
+     */
+    fun executeNavigation(route: String, params: Any? = null) {
+        findRootCoordinator()?.executeNavigation(route, params) ?: parent?.get()
+            ?.executeNavigation(route, params)
+    }
+
+    /**
      * Navigate back to the previous screen
+     * Delegates to the parent coordinator in the hierarchy
      * @return true if back navigation was handled, false otherwise
      */
     fun navigateBack(): Boolean {
@@ -78,6 +97,29 @@ interface Coordinator {
             }
         }
         return false
+    }
+
+    /**
+     * Find the root coordinator in the hierarchy
+     * This allows any coordinator to access the root for navigation
+     * @return The root coordinator or null if not found
+     */
+    fun findRootCoordinator(): RootCoordinator? {
+        val current = this
+        if (current is RootCoordinator) {
+            return current
+        }
+
+        // Recursively look for root coordinator in the parent hierarchy
+        var coordinator = parent?.get()
+        while (coordinator != null) {
+            if (coordinator is RootCoordinator) {
+                return coordinator
+            }
+            coordinator = coordinator.parent?.get()
+        }
+
+        return null
     }
 }
 

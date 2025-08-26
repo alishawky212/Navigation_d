@@ -17,7 +17,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.example.navigation_d.navigation.HiltTestRunner"
     }
 
     buildTypes {
@@ -68,10 +68,25 @@ dependencies {
     
     // Testing
     testImplementation(libs.junit)
+
+    // Mockito for unit tests
+    testImplementation("org.mockito:mockito-core:5.10.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.10.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+
+    // Navigation testing
+    testImplementation("androidx.navigation:navigation-testing:2.7.7")
+
+    // Android testing
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+
+    // Hilt testing
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.51")
+    kaptAndroidTest("com.google.dagger:hilt-android-compiler:2.51")
+
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
